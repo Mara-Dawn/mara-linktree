@@ -1,0 +1,14 @@
+on:
+  push:
+    branches: [ main ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run build
+      - run: rsync -a ./dist /home/mara/website/
