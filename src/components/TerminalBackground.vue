@@ -98,4 +98,10 @@ export default {
     opacity: 0;
   }
 }
+
+@media (max-width: 1250px) {
+  .terminal-container {
+    font-size: 65%;
+  }
+}
 </style>
