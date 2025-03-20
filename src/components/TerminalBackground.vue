@@ -11,7 +11,7 @@ export default {
       commandLines: [
         { text: "whoami", output: "mara" },
         { text: "ls ~/projects", output: "linktree-vue  portfolio  cool-project" },
-        { text: "uptime", output: "12:03:07 up 3 days, 4:25, 3 users" },
+        { text: "uptime", output: "up 3 days, 4:25, 3 users" },
         { text: "echo Welcome!", output: "Welcome!" },
         { text: "clear", output: "" },
       ],
@@ -46,6 +46,10 @@ export default {
           setTimeout(() => {
             if (line.text == "clear") {
               this.displayedText = this.prompt + " ";
+            } else if (line.text == "uptime") {
+              const today = new Date();
+              const time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+              this.displayedText += "\n> " + time + " " + line.output + "\n\n" + this.prompt + " ";
             } else {
               this.displayedText += "\n> " + line.output + "\n\n" + this.prompt + " ";
             }
@@ -73,6 +77,7 @@ export default {
 <style scoped>
 .terminal-container {
   position: fixed;
+  font-size: 140%;
   top: 0;
   left: 0;
   width: 100%;
