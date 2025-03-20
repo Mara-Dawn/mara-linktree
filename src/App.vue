@@ -3,7 +3,7 @@
     <TerminalBackground />
     <div class="container">
       <img class="user-avatar" :src="avatar" alt="Avatar">
-      <h2>{{ username }}</h2>
+      <h2>{{ title }}</h2>
 
       <LinkButton v-for="link in links" :key="link.account" :url="link.url" :icon="link.icon" :label="link.account" />
 
@@ -21,7 +21,7 @@ export default {
   components: { TerminalBackground, LinkButton },
   data() {
     return {
-      username: 'Mara',
+      title: 'Mara\'s Socials',
       avatar: '/avatar.png',
       discordName: 'maradawn',
       discordIcon: 'fab fa-discord',
