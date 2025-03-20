@@ -47,7 +47,7 @@ export default {
             if (line.text == "clear") {
               this.displayedText = this.prompt + " ";
             } else {
-              this.displayedText += "\n" + line.output + "\n\n" + this.prompt + " ";
+              this.displayedText += "\n> " + line.output + "\n\n" + this.prompt + " ";
             }
             this.showResult = true;
             this.terminalTyping();
