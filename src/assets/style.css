@@ -1,0 +1,29 @@
+body {
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	font-family: 'JetBrains Mono', monospace;
+	box-sizing: border-box;
+}
+
+.container {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	padding-top: 10vh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+h2 {
+	color: #f5c2e7;
+}
+
+.user-avatar {
+	width: 130px;
+	height: 130px;
+	border-radius: 50%;
+	border: 3px solid #89b4fa;
+	object-fit: cover;
+}

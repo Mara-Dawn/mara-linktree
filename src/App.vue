@@ -1,26 +1,39 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div id="app">
+    <TerminalBackground />
+    <div class="container">
+      <img class="user-avatar" :src="avatar" alt="Avatar">
+      <h2>{{ username }}</h2>
+
+      <LinkButton v-for="link in links" :key="link.account" :url="link.url" :icon="link.icon" :label="link.account" />
+
+      <LinkButton :icon="discordIcon" :label="discordName" />
+    </div>
+  </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import TerminalBackground from '@/components/TerminalBackground.vue'
+import LinkButton from '@/components/LinkButton.vue'
 
 export default {
   name: 'App',
-  components: {
-    HelloWorld
-  }
+  components: { TerminalBackground, LinkButton },
+  data() {
+    return {
+      username: 'Mara',
+      avatar: '/avatar.png',
+      discordName: 'maradawn',
+      discordIcon: 'fab fa-discord',
+      links: [
+        { url: 'https://github.com/Mara-Dawn', icon: 'fab fa-github', account: '@Mara-Dawn' },
+        { url: 'https://www.youtube.com/@MaraDawn', icon: 'fab fa-youtube', account: '@MaraDawn' },
+      ],
+    }
+  },
 }
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
+@import '@/assets/style.css';
 </style>
