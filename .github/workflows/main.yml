@@ -11,3 +11,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: npm run build
+      - run: rsync -a ./dist /home/mara/website/
