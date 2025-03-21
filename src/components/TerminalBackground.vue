@@ -1,6 +1,10 @@
 <template>
   <div class="terminal-container">
-    <pre class="terminal-output">{{ displayedText }}<span class="cursor">|</span></pre>
+    <pre class="terminal-output">
+      <div v-for="(line, index) in    displayedLines   " :key="index" v-bind:class="{ output: line.output }">
+        <span v-if="line.output" class="prompt-symbol">&gt;</span><span>{{ line.text }}</span><span v-if="index == displayedLines.length - 1" class="cursor">|</span>
+      </div>
+    </pre>
   </div>
 </template>
 
@@ -15,8 +19,11 @@ export default {
         { text: "echo Welcome!", output: "Welcome!" },
         { text: "clear", output: "" },
       ],
+      displayedLines: [],
+      typingLine: '',
       prompt: 'mara@cafe:~$',
       showResult: false,
+      outputLine: false,
       displayedText: '',
       lineIndex: 0,
       charIndex: 0,
@@ -26,8 +33,15 @@ export default {
     terminalTyping() {
 
       if (this.lineIndex >= this.commandLines.length) {
-        this.displayedText = this.prompt + " ";
+        this.typingline = this.prompt + " ";
+
         setTimeout(() => {
+          this.displayedLines = [];
+          this.displayedLines.push({
+            text: this.typingline,
+            output: false
+          });
+          this.outputLine = '';
           this.lineIndex = 0;
           this.charIndex = 0;
           this.terminalTyping();
@@ -35,24 +49,52 @@ export default {
         return;
       }
 
-      let line = this.commandLines[this.lineIndex];
+      const line = this.commandLines[this.lineIndex];
 
       if (this.charIndex < line.text.length) {
-        this.displayedText += line.text.charAt(this.charIndex);
+        this.displayedLines[this.displayedLines.length - 1].text += line.text.charAt(this.charIndex);
         this.charIndex++;
         setTimeout(this.terminalTyping, 100);
+
       } else {
+
         if (!this.showResult) {
+
           setTimeout(() => {
+
             if (line.text == "clear") {
-              this.displayedText = this.prompt + " ";
+
+              this.displayedLines = [];
+
             } else if (line.text == "uptime") {
+
               const today = new Date();
               const time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
-              this.displayedText += "\n> " + time + " " + line.output + "\n\n" + this.prompt + " ";
+
+              let newLine = time + " " + line.output;
+
+              this.displayedLines.push({
+                text: newLine,
+                output: true
+              });
+
             } else {
-              this.displayedText += "\n> " + line.output + "\n\n" + this.prompt + " ";
+
+              let newLine = line.output;
+              this.displayedLines.push({
+                text: newLine,
+                output: true
+              });
+
             }
+
+            this.typingline = this.prompt + " ";
+
+            this.displayedLines.push({
+              text: this.typingline,
+              output: false
+            });
+
             this.showResult = true;
             this.terminalTyping();
           }, 800);
@@ -68,7 +110,11 @@ export default {
     },
   },
   mounted() {
-    this.displayedText = this.prompt + " ";
+    this.typingLine = this.prompt + " ";
+    this.displayedLines.push({
+      text: this.typingLine,
+      output: false
+    });
     setTimeout(this.terminalTyping, 3000);
   }
 }
@@ -88,6 +134,15 @@ export default {
   overflow: auto;
 }
 
+.terminal-output,
+.terminal-output * {
+  white-space: normal;
+}
+
+.output {
+  margin-bottom: 1em;
+}
+
 .cursor {
   animation: blink 0.9s infinite;
   color: #f38ba8;
@@ -97,6 +152,12 @@ export default {
   50% {
     opacity: 0;
   }
+}
+
+.prompt-symbol {
+  color: #a6e3a1;
+  margin-right: 6px;
+  font-weight: bolder;
 }
 
 @media (max-width: 1250px) {
