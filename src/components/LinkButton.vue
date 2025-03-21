@@ -32,6 +32,7 @@ export default {
 
 .link:hover {
   background-color: #45475a;
+  color: #b4befe;
   transform: translateY(-3px);
 }
 
