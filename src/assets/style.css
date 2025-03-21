@@ -1,8 +1,15 @@
+@font-face {
+	font-family: 'JetBrains Mono Nerd Font';
+	src: url('JetBrainsMonoNerdFont-Medium.ttf') format('ttf');
+	font-weight: 400;
+	font-style: normal;
+}
+
 body {
 	margin: 0;
 	padding: 0;
 	overflow: hidden;
-	font-family: 'JetBrains Mono', monospace;
+	font-family: 'JetBrains Mono Nerd Font', monospace;
 	box-sizing: border-box;
 }
 
