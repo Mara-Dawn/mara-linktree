@@ -24,10 +24,12 @@ export default {
       title: 'Mara\'s Socials',
       avatar: '/avatar.png',
       discordName: 'maradawn',
-      discordIcon: 'fab fa-discord',
+      discordIcon: 'nf nf-fa-discord',
       links: [
-        { url: 'https://github.com/Mara-Dawn', icon: 'fab fa-github', account: '@Mara-Dawn' },
-        { url: 'https://www.youtube.com/@MaraDawn', icon: 'fab fa-youtube', account: '@MaraDawn' },
+        { url: 'https://github.com/Mara-Dawn', icon: 'nf nf-dev-github', account: '@Mara-Dawn' },
+        { url: 'https://www.youtube.com/@MaraDawn', icon: 'nf nf-fa-youtube', account: '@MaraDawn' },
+        { url: 'https://www.twitter.com/mara_xiv', icon: 'nf nf-cod-twitter', account: '@mara_xiv' },
+        { url: 'https://github.com/Mara-Dawn/dotfiles', icon: 'nf nf-md-arch', account: '.dotfiles' },
       ],
     }
   },
