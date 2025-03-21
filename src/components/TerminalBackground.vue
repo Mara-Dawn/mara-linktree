@@ -155,7 +155,7 @@ export default {
 }
 
 .prompt-symbol {
-  color: #a6e3a1;
+  color: #f38ba8;
   margin-right: 6px;
   font-weight: bolder;
 }
