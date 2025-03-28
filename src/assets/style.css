@@ -23,11 +23,12 @@ body {
     position: relative;
     z-index: 1;
     width: 100%;
-    padding-top: 15vh;
+    padding-top: 18vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     /* Light text to contrast with the particles */
+    padding-bottom: 15vh;
 }
 
 

@@ -163,7 +163,7 @@ export default {
 
 @media (max-width: 850px) {
     .terminal-container {
-        font-size: 80%;
+        font-size: 70%;
     }
 }
 </style>

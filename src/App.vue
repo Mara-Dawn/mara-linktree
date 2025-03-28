@@ -1,27 +1,16 @@
 <template>
-    <div id="app">
-        <ParticleBackground>
-            <TerminalBackground />
-            <div class="content">
-                <img class="user-avatar" :src="avatar" alt="Avatar">
-                <h2>{{ title }}</h2>
+    <ParticleBackground>
+        <TerminalBackground />
+        <div class="content">
+            <img class="user-avatar" :src="avatar" alt="Avatar">
+            <h2>{{ title }}</h2>
 
-                <LinkButton v-for="link in links" :key="link.account" :url="link.url" :icon="link.icon"
-                    :label="link.account" />
+            <LinkButton v-for="link in links" :key="link.account" :url="link.url" :icon="link.icon"
+                :label="link.account" />
 
-                <LinkButton :icon="discordIcon" :label="discordName" />
-            </div>
-        </ParticleBackground>
-        <!-- <div class="container"> -->
-        <!--     <img class="user-avatar" :src="avatar" alt="Avatar"> -->
-        <!--     <h2>{{ title }}</h2> -->
-        <!---->
-        <!--     <LinkButton v-for="link in links" :key="link.account" :url="link.url" :icon="link.icon" -->
-        <!--         :label="link.account" /> -->
-        <!---->
-        <!--     <LinkButton :icon="discordIcon" :label="discordName" /> -->
-        <!-- </div> -->
-    </div>
+            <LinkButton :icon="discordIcon" :label="discordName" />
+        </div>
+    </ParticleBackground>
 </template>
 
 <script>

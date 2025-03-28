@@ -1,7 +1,8 @@
-<!-- ParticleBackground.vue -->
 <template>
-    <div class="particle-container" ref="particleContainer" @mousemove="handleMouseMove">
+    <div class="particle-container" ref="particleContainer">
         <canvas ref="particleCanvas"></canvas>
+    </div>
+    <div class="content-wrapper">
         <slot></slot>
     </div>
 </template>
@@ -36,29 +37,32 @@ export default {
             maxSpeed: 3,
         };
     },
+
     mounted() {
         this.initializeCanvas();
         this.createParticles();
         this.animate(performance.now());
 
-        // Resize handling
+        window.addEventListener('mousemove', this.handleMouseMove);
+        window.addEventListener('mouseout', this.handleMouseLeave);
+        window.addEventListener('mouseover', this.handleMouseEnter);
         window.addEventListener('resize', this.handleResize);
-
-        this.$refs.particleContainer.addEventListener('mouseleave', this.handleMouseLeave);
-        this.$refs.particleContainer.addEventListener('mouseenter', this.handleMouseEnter);
     },
+
     beforeUnmount() {
         cancelAnimationFrame(this.animationFrame);
+
         window.removeEventListener('resize', this.handleResize);
-        this.$refs.particleContainer.removeEventListener('mouseleave', this.handleMouseLeave);
-        this.$refs.particleContainer.removeEventListener('mouseenter', this.handleMouseEnter);
+        window.removeEventListener('mousemove', this.handleMouseMove);
+        window.removeEventListener('mouseout', this.handleMouseLeave);
+        window.removeEventListener('mouseover', this.handleMouseEnter);
     },
+
     methods: {
         initializeCanvas() {
             this.canvas = this.$refs.particleCanvas;
             this.ctx = this.canvas.getContext('2d');
 
-            // Set canvas to full size of container
             this.canvas.width = this.$refs.particleContainer.offsetWidth;
             this.canvas.height = this.$refs.particleContainer.offsetHeight;
 
@@ -102,33 +106,26 @@ export default {
         },
 
         calculateParticleCount() {
-            // Calculate based on screen area and density
             const area = this.canvas.width * this.canvas.height;
             const count = Math.floor(area * this.particleDensity);
 
-            // Set minimum and maximum limits
             return Math.max(30, Math.min(count, 300));
         },
 
         updateGrid() {
             this.grid = {};
 
-            // Insert each particle into the appropriate grid cell
             this.particles.forEach((particle, index) => {
-                // Calculate grid cell coordinates for this particle
                 const cellX = Math.floor(particle.x / this.cellSize);
                 const cellY = Math.floor(particle.y / this.cellSize);
                 const cellKey = `${cellX},${cellY}`;
 
-                // Create the cell if it doesn't exist
                 if (!this.grid[cellKey]) {
                     this.grid[cellKey] = [];
                 }
 
-                // Store the particle index in the cell
                 this.grid[cellKey].push(index);
 
-                // Store the cell coordinates on the particle for quick access
                 particle.cellX = cellX;
                 particle.cellY = cellY;
             });
@@ -137,12 +134,10 @@ export default {
         getNeighborParticles(cellX, cellY) {
             const neighbors = [];
 
-            // Check surrounding 9 cells (including the current cell)
             for (let x = cellX - 1; x <= cellX + 1; x++) {
                 for (let y = cellY - 1; y <= cellY + 1; y++) {
                     const cellKey = `${x},${y}`;
                     if (this.grid[cellKey]) {
-                        // Add indices of particles in this cell
                         neighbors.push(...this.grid[cellKey]);
                     }
                 }
@@ -157,12 +152,10 @@ export default {
             this.particles.forEach(particle => {
 
                 if (this.isMouseInside) {
-                    // Check for mouse influence
                     const dx = particle.x - this.mouseX;
                     const dy = particle.y - this.mouseY;
                     const distanceSq = dx * dx + dy * dy;
 
-                    // If mouse is close enough, affect the particle
                     if (distanceSq < this.mouseRadius * this.mouseRadius) {
                         const distance = Math.sqrt(distanceSq);
                         const force = (this.mouseRadius - distance) / this.mouseRadius * this.mouseForceModifier;
@@ -171,17 +164,14 @@ export default {
                     }
                 }
 
-                // Apply damping to gradually return to original speed
                 if (this.isMouseInside) {
                     particle.speedX = particle.speedX * (1 - 0.05 * timeScale) + particle.originalSpeedX * (0.05 * timeScale);
                     particle.speedY = particle.speedY * (1 - 0.05 * timeScale) + particle.originalSpeedY * (0.05 * timeScale);
                 } else {
-                    // If mouse is outside, return all particles to original speed more quickly
                     particle.speedX = particle.speedX * (1 - 0.1 * timeScale) + particle.originalSpeedX * (0.1 * timeScale);
                     particle.speedY = particle.speedY * (1 - 0.1 * timeScale) + particle.originalSpeedY * (0.1 * timeScale);
                 }
 
-                // Apply velocity limit to prevent excessive speeds
                 const speedSq = particle.speedX * particle.speedX + particle.speedY * particle.speedY;
                 if (speedSq > this.maxSpeed * this.maxSpeed) {
                     const speed = Math.sqrt(speedSq);
@@ -189,10 +179,9 @@ export default {
                     particle.speedY = (particle.speedY / speed) * this.maxSpeed;
                 }
 
-                particle.x += particle.speedX * timeScale * 60; // Scale by 60 to maintain similar speed to 60fps
+                particle.x += particle.speedX * timeScale * 60;
                 particle.y += particle.speedY * timeScale * 60;
 
-                // Handle edge conditions
                 if (particle.x < 0) particle.x = this.canvas.width;
                 if (particle.x > this.canvas.width) particle.x = 0;
                 if (particle.y < 0) particle.y = this.canvas.height;
@@ -218,7 +207,6 @@ export default {
                 for (let j = 0; j < neighbors.length; j++) {
                     const neighborIndex = neighbors[j];
 
-                    // Skip self
                     if (i === neighborIndex) continue;
 
                     const otherParticle = this.particles[neighborIndex];
@@ -226,14 +214,11 @@ export default {
                     const dy = particle.y - otherParticle.y;
                     const distanceSq = Math.sqrt(dx * dx + dy * dy);
 
-                    // Skip calculations if particles are too far apart
                     if (distanceSq > this.connectionDistanceSq) continue;
 
                     const distance = Math.sqrt(dx * dx + dy * dy);
 
-                    // Apply repulsion force if particles are too close
                     if (distance < this.repulsionRadius && distance > 0 && this.frameCount % 2 === 0) {
-                        // Quadratic falloff for smoother repulsion
                         const forceFactor = Math.pow(1 - distance / this.repulsionRadius, 2);
                         const force = this.repulsionStrength * forceFactor;
 
@@ -264,38 +249,43 @@ export default {
 
         handleMouseMove(e) {
             const rect = this.canvas.getBoundingClientRect();
+
             this.mouseX = e.clientX - rect.left;
             this.mouseY = e.clientY - rect.top;
+
+            this.isMouseInside =
+                this.mouseX >= 0 &&
+                this.mouseX <= rect.width &&
+                this.mouseY >= 0 &&
+                this.mouseY <= rect.height;
         },
 
         handleResize() {
             this.canvas.width = this.$refs.particleContainer.offsetWidth;
             this.canvas.height = this.$refs.particleContainer.offsetHeight;
 
-            // Recreate particles with the new screen size
             this.createParticles();
-        },
-
-        handleMouseEnter(e) {
-            this.isMouseInside = true;
-            // Update mouse position immediately to avoid sudden jumps
-            this.handleMouseMove(e);
         },
 
         handleMouseLeave() {
             this.isMouseInside = false;
-        }
+        },
+
+        handleMouseEnter() {
+            this.isMouseInside = true;
+        },
     }
 };
 </script>
 
 <style scoped>
 .particle-container {
-    position: relative;
+    position: fixed;
     width: 100%;
     height: 100%;
     overflow: hidden;
     background-color: #1e1e2e;
+    z-index: 0;
 }
 
 canvas {
@@ -304,5 +294,15 @@ canvas {
     left: 0;
     width: 100%;
     height: 100%;
+}
+
+.content-wrapper {
+    position: relative;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.content-wrapper>>>* {
+    pointer-events: auto;
 }
 </style>
