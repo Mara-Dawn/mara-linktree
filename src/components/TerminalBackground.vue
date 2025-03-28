@@ -129,10 +129,10 @@ export default {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #1e1e2e;
     color: #cdd6f4;
     padding: 20px;
     overflow: auto;
+    font-weight: bold;
 }
 
 .terminal-output,
@@ -161,9 +161,9 @@ export default {
     font-weight: bolder;
 }
 
-@media (max-width: 1250px) {
+@media (max-width: 850px) {
     .terminal-container {
-        font-size: 65%;
+        font-size: 80%;
     }
 }
 </style>
