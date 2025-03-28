@@ -148,8 +148,11 @@ export default {
 
         updateParticles(deltaTime) {
             const timeScale = this.baseSpeed * Math.min(deltaTime, 0.1);
+            const dampingFactor = this.isMouseInside ? 0.15 : 0.25;
+            const maxSpeedSq = this.maxSpeed * this.maxSpeed;
 
             this.particles.forEach(particle => {
+                let hasMouseInfluence = false;
 
                 if (this.isMouseInside) {
                     const dx = particle.x - this.mouseX;
@@ -161,22 +164,29 @@ export default {
                         const force = (this.mouseRadius - distance) / this.mouseRadius * this.mouseForceModifier;
                         particle.speedX = particle.originalSpeedX + (dx / distance) * force;
                         particle.speedY = particle.originalSpeedY + (dy / distance) * force;
+                        hasMouseInfluence = true;
                     }
                 }
 
-                if (this.isMouseInside) {
-                    particle.speedX = particle.speedX * (1 - 0.05 * timeScale) + particle.originalSpeedX * (0.05 * timeScale);
-                    particle.speedY = particle.speedY * (1 - 0.05 * timeScale) + particle.originalSpeedY * (0.05 * timeScale);
-                } else {
-                    particle.speedX = particle.speedX * (1 - 0.1 * timeScale) + particle.originalSpeedX * (0.1 * timeScale);
-                    particle.speedY = particle.speedY * (1 - 0.1 * timeScale) + particle.originalSpeedY * (0.1 * timeScale);
+                if (!hasMouseInfluence) {
+                    particle.speedX = particle.speedX * (1 - dampingFactor * timeScale) +
+                        particle.originalSpeedX * (dampingFactor * timeScale);
+                    particle.speedY = particle.speedY * (1 - dampingFactor * timeScale) +
+                        particle.originalSpeedY * (dampingFactor * timeScale);
                 }
 
-                const speedSq = particle.speedX * particle.speedX + particle.speedY * particle.speedY;
-                if (speedSq > this.maxSpeed * this.maxSpeed) {
-                    const speed = Math.sqrt(speedSq);
-                    particle.speedX = (particle.speedX / speed) * this.maxSpeed;
-                    particle.speedY = (particle.speedY / speed) * this.maxSpeed;
+                const currentSpeedSq = particle.speedX * particle.speedX + particle.speedY * particle.speedY;
+                if (currentSpeedSq > maxSpeedSq) {
+                    const speedFactor = this.maxSpeed / Math.sqrt(currentSpeedSq);
+                    particle.speedX *= speedFactor;
+                    particle.speedY *= speedFactor;
+                }
+
+                if (currentSpeedSq > maxSpeedSq * 0.7) {
+                    if (Math.random() < 0.1) {
+                        particle.speedX *= 0.9;
+                        particle.speedY *= 0.9;
+                    }
                 }
 
                 particle.x += particle.speedX * timeScale * 60;
