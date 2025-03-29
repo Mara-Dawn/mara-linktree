@@ -35,6 +35,8 @@ export default {
             repulsionStrength: 0.03,
             frameCount: 0,
             maxSpeed: 3,
+            prevScreenWidth: 0,
+            prevScreenHeight: 0,
         };
     },
 
@@ -273,6 +275,11 @@ export default {
         handleResize() {
             this.canvas.width = this.$refs.particleContainer.offsetWidth;
             this.canvas.height = this.$refs.particleContainer.offsetHeight;
+
+            if (Math.abs(this.prevScreenWidth - this.canvas.width) < 250 && Math.abs(this.prevScreenHeight - this.canvas.height) < 250) return;
+
+            this.prevScreenWidth = this.canvas.width;
+            this.prevScreenHeight = this.canvas.height;
 
             this.createParticles();
         },
