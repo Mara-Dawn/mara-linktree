@@ -14,29 +14,49 @@ export default {
         return {
             canvas: null,
             ctx: null,
+
             particles: [],
-            particleDensity: 0.00005,
+            particleDensity: 0.00007,
             colors: ['#585b70', '#cba6f7', '#45475a', '#6c7086', '#7f849c'],
+            minRadius: 1,
+            maxRadius: 5,
+
+            lineDistance: 140,
+            lineWidth: 1,
+            lineOpacity: 0.4,
+
             animationFrame: null,
-            mouseX: 0,
-            mouseY: 0,
-            mouseRadius: 300,
-            speedModifier: 0.25,
-            lineDistance: 160,
-            lineDistanceSq: 160 * 160,
-            mouseForceModifier: 4,
-            isMouseInside: false,
             lastFrameTime: 0,
-            baseSpeed: 1,
-            grid: {},
-            cellSize: 160,
-            repulsionRadius: 30,
-            repulsionRadiusSq: 30 * 30,
-            repulsionStrength: 0.03,
             frameCount: 0,
-            maxSpeed: 3,
             prevScreenWidth: 0,
             prevScreenHeight: 0,
+            maxParticleCount: 600,
+            minParticleCount: 30,
+
+            mouseX: 0,
+            mouseY: 0,
+            mouseRadius: 200,
+            mouseForceModifier: 300,
+            isMouseInside: false,
+
+            grid: {},
+
+            baseSpeed: 2.5,
+            speedModifier: 1,
+            impulseDecay: 0.57,
+            returnRate: 0.9,
+            repulsionRadius: 35,
+            repulsionStrength: 2.5,
+            repulsionFactor: 0.4,
+
+            massInfluence: 0.3,     // (0 = no influence, 1 = normal, 2 = exaggerated)
+            massSpeedFactor: 1.5,   // How much faster smaller particles move
+            massMouseFactor: 0.1,   // How much more smaller particles respond to mouse
+            massEmitterFactor: 0.15, // How much more larger particles push others
+            massReceiverFactor: 1.8,  // How much more smaller particles get pushed
+            maxSpeedBase: 25,        // Base maximum speed
+
+
         };
     },
 
@@ -65,11 +85,18 @@ export default {
             this.canvas = this.$refs.particleCanvas;
             this.ctx = this.canvas.getContext('2d');
 
-            this.canvas.width = this.$refs.particleContainer.offsetWidth;
-            this.canvas.height = this.$refs.particleContainer.offsetHeight;
+            const dpr = window.devicePixelRatio || 1;
+            const rect = this.$refs.particleContainer.getBoundingClientRect();
 
-            this.lineDistanceSq = this.lineDistance * this.lineDistance;
-            this.repulsionRadiusSq = this.repulsionRadius * this.repulsionRadius;
+            this.canvas.width = rect.width * dpr;
+            this.canvas.height = rect.height * dpr;
+
+            this.ctx.scale(dpr, dpr);
+
+            this.canvas.style.width = `${rect.width}px`;
+            this.canvas.style.height = `${rect.height}px`;
+
+            this.cellSize = this.lineDistance * 1.1;
         },
 
         createParticles() {
@@ -77,15 +104,21 @@ export default {
             const particleCount = this.calculateParticleCount();
 
             for (let i = 0; i < particleCount; i++) {
+                const radius = Math.random() * (this.maxRadius - this.minRadius) + this.minRadius;
+                const mass = Math.PI * radius * radius;
+
                 this.particles.push({
                     x: Math.random() * this.canvas.width,
                     y: Math.random() * this.canvas.height,
-                    radius: Math.random() * 3 + 1,
+                    radius: radius,
+                    mass: mass,
                     color: this.colors[Math.floor(Math.random() * this.colors.length)],
-                    speedX: (Math.random() * 1 - 0.5) * this.speedModifier,
-                    speedY: (Math.random() * 1 - 0.5) * this.speedModifier,
-                    originalSpeedX: (Math.random() * 1 - 0.5) * this.speedModifier,
-                    originalSpeedY: (Math.random() * 1 - 0.5) * this.speedModifier,
+                    speedX: (Math.random() * 1 - 0.5) * this.speedModifier * (this.massSpeedFactor / mass),
+                    speedY: (Math.random() * 1 - 0.5) * this.speedModifier * (this.massSpeedFactor / mass),
+                    originalSpeedX: (Math.random() * 1 - 0.5) * this.speedModifier * (this.massSpeedFactor / mass),
+                    originalSpeedY: (Math.random() * 1 - 0.5) * this.speedModifier * (this.massSpeedFactor / mass),
+                    impulseX: 0,
+                    impulseY: 0
                 });
             }
         },
@@ -100,9 +133,8 @@ export default {
 
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-            this.updateParticles(deltaTime);
             this.updateGrid();
-            this.drawParticles(deltaTime);
+            this.updateParticles(deltaTime);
 
             this.animationFrame = requestAnimationFrame(this.animate);
         },
@@ -111,7 +143,7 @@ export default {
             const area = this.canvas.width * this.canvas.height;
             const count = Math.floor(area * this.particleDensity);
 
-            return Math.max(30, Math.min(count, 300));
+            return Math.max(this.minParticleCount, Math.min(count, this.maxParticleCount));
         },
 
         updateGrid() {
@@ -150,59 +182,10 @@ export default {
 
         updateParticles(deltaTime) {
             const timeScale = this.baseSpeed * Math.min(deltaTime, 0.1);
-            const dampingFactor = this.isMouseInside ? 0.15 : 0.25;
-            const maxSpeedSq = this.maxSpeed * this.maxSpeed;
 
-            this.particles.forEach(particle => {
-                let hasMouseInfluence = false;
-
-                if (this.isMouseInside) {
-                    const dx = particle.x - this.mouseX;
-                    const dy = particle.y - this.mouseY;
-                    const distanceSq = dx * dx + dy * dy;
-
-                    if (distanceSq < this.mouseRadius * this.mouseRadius) {
-                        const distance = Math.sqrt(distanceSq);
-                        const force = (this.mouseRadius - distance) / this.mouseRadius * this.mouseForceModifier;
-                        particle.speedX = particle.originalSpeedX + (dx / distance) * force;
-                        particle.speedY = particle.originalSpeedY + (dy / distance) * force;
-                        hasMouseInfluence = true;
-                    }
-                }
-
-                if (!hasMouseInfluence) {
-                    particle.speedX = particle.speedX * (1 - dampingFactor * timeScale) +
-                        particle.originalSpeedX * (dampingFactor * timeScale);
-                    particle.speedY = particle.speedY * (1 - dampingFactor * timeScale) +
-                        particle.originalSpeedY * (dampingFactor * timeScale);
-                }
-
-                const currentSpeedSq = particle.speedX * particle.speedX + particle.speedY * particle.speedY;
-                if (currentSpeedSq > maxSpeedSq) {
-                    const speedFactor = this.maxSpeed / Math.sqrt(currentSpeedSq);
-                    particle.speedX *= speedFactor;
-                    particle.speedY *= speedFactor;
-                }
-
-                if (currentSpeedSq > maxSpeedSq * 0.7) {
-                    if (Math.random() < 0.1) {
-                        particle.speedX *= 0.9;
-                        particle.speedY *= 0.9;
-                    }
-                }
-
-                particle.x += particle.speedX * timeScale * 60;
-                particle.y += particle.speedY * timeScale * 60;
-
-                if (particle.x < 0) particle.x = this.canvas.width;
-                if (particle.x > this.canvas.width) particle.x = 0;
-                if (particle.y < 0) particle.y = this.canvas.height;
-                if (particle.y > this.canvas.height) particle.y = 0;
-            });
-        },
-
-        drawParticles(deltaTime) {
-            const timeScale = this.baseSpeed * Math.min(deltaTime, 0.1) * 60;
+            const repulsionRadiusSq = this.repulsionRadius * this.repulsionRadius;
+            const lineDistanceSq = this.lineDistance * this.lineDistance;
+            const mouseRadiusSq = this.mouseRadius * this.mouseRadius;
 
             for (let i = 0; i < this.particles.length; i++) {
                 const particle = this.particles[i];
@@ -213,9 +196,33 @@ export default {
             }
 
             for (let i = 0; i < this.particles.length; i++) {
+
                 const particle = this.particles[i];
+                const inverseMass = this.massInfluence > 0
+                    ? Math.pow(1 / particle.mass, this.massInfluence)
+                    : 1.0; // If massInfluence is 0, all particles have the same inverse mass
+
+                // Mouse interaction
+                if (this.isMouseInside) {
+                    const dx = particle.x - this.mouseX;
+                    const dy = particle.y - this.mouseY;
+                    const distanceSq = dx * dx + dy * dy;
+
+                    if (distanceSq < mouseRadiusSq && distanceSq > 0) {
+                        const distance = Math.sqrt(distanceSq);
+
+                        const force = (this.mouseRadius - distance) / this.mouseRadius;
+                        const impulseStrength = force * this.mouseForceModifier * timeScale *
+                            (this.massInfluence > 0 ? inverseMass * this.massMouseFactor : 1.0);
+
+                        particle.impulseX = (dx / distance) * impulseStrength;
+                        particle.impulseY = (dy / distance) * impulseStrength;
+                    }
+                }
+
                 const neighbors = this.getNeighborParticles(particle.cellX, particle.cellY);
 
+                // Repulsion and Line connections
                 for (let j = 0; j < neighbors.length; j++) {
                     const neighborIndex = neighbors[j];
 
@@ -224,38 +231,110 @@ export default {
                     const otherParticle = this.particles[neighborIndex];
                     const dx = particle.x - otherParticle.x;
                     const dy = particle.y - otherParticle.y;
-                    const distanceSq = Math.sqrt(dx * dx + dy * dy);
+                    const distanceSq = dx * dx + dy * dy;
 
-                    if (distanceSq > this.connectionDistanceSq) continue;
+                    if (distanceSq < Math.max(repulsionRadiusSq, lineDistanceSq) && distanceSq > 0) {
+                        const distance = Math.sqrt(distanceSq);
 
-                    const distance = Math.sqrt(dx * dx + dy * dy);
+                        // Repulsion
+                        if (distanceSq < repulsionRadiusSq) {
+                            const forceFactor = Math.pow(1 - distance / this.repulsionRadius, 2);
 
-                    if (distance < this.repulsionRadius && distance > 0 && this.frameCount % 2 === 0) {
-                        const forceFactor = Math.pow(1 - distance / this.repulsionRadius, 2);
-                        const force = this.repulsionStrength * forceFactor;
+                            const emitterFactor = this.massInfluence > 0
+                                ? Math.pow(otherParticle.mass, this.massInfluence) * this.massEmitterFactor
+                                : 1.0;
+                            const receiverFactor = this.massInfluence > 0
+                                ? inverseMass * this.massReceiverFactor
+                                : 1.0;
 
-                        particle.speedX += (dx / distance) * force * timeScale;
-                        particle.speedY += (dy / distance) * force * timeScale;
-                    }
+                            const impulseStrength = Math.min(
+                                this.repulsionStrength * forceFactor * timeScale *
+                                this.repulsionFactor * emitterFactor * receiverFactor,
+                                10
+                            );
 
-                    if (neighborIndex > i && distance < this.lineDistance) {
-                        const gradient = this.ctx.createLinearGradient(
-                            particle.x, particle.y,
-                            otherParticle.x, otherParticle.y
-                        );
-                        gradient.addColorStop(0, particle.color);
-                        gradient.addColorStop(1, otherParticle.color);
+                            if (distance > 0) {
+                                particle.impulseX += (dx / distance) * impulseStrength;
+                                particle.impulseY += (dy / distance) * impulseStrength;
+                            }
+                        }
 
-                        this.ctx.beginPath();
-                        this.ctx.strokeStyle = gradient;
-                        this.ctx.globalAlpha = 0.3 * (1 - distance / this.lineDistance);
-                        this.ctx.lineWidth = 1.5;
-                        this.ctx.moveTo(particle.x, particle.y);
-                        this.ctx.lineTo(otherParticle.x, otherParticle.y);
-                        this.ctx.stroke();
-                        this.ctx.globalAlpha = 1;
+                        // Line connections
+                        if (neighborIndex > i && distanceSq < lineDistanceSq) {
+                            const gradient = this.ctx.createLinearGradient(
+                                particle.x, particle.y,
+                                otherParticle.x, otherParticle.y
+                            );
+                            gradient.addColorStop(0, particle.color);
+                            gradient.addColorStop(1, otherParticle.color);
+
+                            this.ctx.beginPath();
+                            this.ctx.strokeStyle = gradient;
+                            this.ctx.globalAlpha = this.lineOpacity * (1 - distance / this.lineDistance);
+                            this.ctx.lineWidth = this.lineWidth;
+                            this.ctx.moveTo(particle.x, particle.y);
+                            this.ctx.lineTo(otherParticle.x, otherParticle.y);
+                            this.ctx.stroke();
+                            this.ctx.globalAlpha = 1;
+                        }
                     }
                 }
+
+                // Apply impulse
+                particle.speedX += particle.impulseX;
+                particle.speedY += particle.impulseY;
+
+                particle.impulseX *= this.impulseDecay;
+                particle.impulseY *= this.impulseDecay;
+
+                if (Math.abs(particle.impulseX) < 0.001) particle.impulseX = 0;
+                if (Math.abs(particle.impulseY) < 0.001) particle.impulseY = 0;
+
+                particle.speedX = particle.speedX * (1 - this.returnRate * timeScale) +
+                    particle.originalSpeedX * (this.returnRate * timeScale);
+                particle.speedY = particle.speedY * (1 - this.returnRate * timeScale) +
+                    particle.originalSpeedY * (this.returnRate * timeScale);
+
+                const maxSpeedForMass = this.massInfluence > 0
+                    ? this.maxSpeedBase * (this.massSpeedFactor / Math.pow(particle.mass, this.massInfluence))
+                    : this.maxSpeedBase;
+                const currentSpeedSq = particle.speedX * particle.speedX + particle.speedY * particle.speedY;
+                if (currentSpeedSq > maxSpeedForMass * maxSpeedForMass) {
+                    const speed = Math.sqrt(currentSpeedSq);
+                    particle.speedX = (particle.speedX / speed) * maxSpeedForMass;
+                    particle.speedY = (particle.speedY / speed) * maxSpeedForMass;
+                }
+
+                particle.x += particle.speedX * timeScale * 60;
+                particle.y += particle.speedY * timeScale * 60;
+
+                // Boundary check
+                if (particle.x < -particle.radius) {
+                    particle.x = this.canvas.width + particle.radius;
+                } else if (particle.x > this.canvas.width + particle.radius) {
+                    particle.x = -particle.radius;
+                }
+
+                if (particle.y < -particle.radius) {
+                    particle.y = this.canvas.height + particle.radius;
+                } else if (particle.y > this.canvas.height + particle.radius) {
+                    particle.y = -particle.radius;
+                }
+
+                // Additional Safeguard
+                if (isNaN(particle.x) || isNaN(particle.y) ||
+                    !isFinite(particle.x) || !isFinite(particle.y) ||
+                    Math.abs(particle.speedX) > this.maxSpeedBase * 10 ||
+                    Math.abs(particle.speedY) > this.maxSpeedBase * 10) {
+
+                    particle.x = Math.random() * this.canvas.width;
+                    particle.y = Math.random() * this.canvas.height;
+                    particle.speedX = particle.originalSpeedX;
+                    particle.speedY = particle.originalSpeedY;
+                    particle.impulseX = 0;
+                    particle.impulseY = 0;
+                }
+
             }
         },
 
@@ -273,23 +352,32 @@ export default {
         },
 
         handleResize() {
-            this.canvas.width = this.$refs.particleContainer.offsetWidth;
-            this.canvas.height = this.$refs.particleContainer.offsetHeight;
+            const dpr = window.devicePixelRatio || 1;
+            const rect = this.$refs.particleContainer.getBoundingClientRect();
 
-            if (Math.abs(this.prevScreenWidth - this.canvas.width) < 250 && Math.abs(this.prevScreenHeight - this.canvas.height) < 250) return;
+            this.canvas.width = rect.width * dpr;
+            this.canvas.height = rect.height * dpr;
+            this.ctx.scale(dpr, dpr);
 
-            this.prevScreenWidth = this.canvas.width;
-            this.prevScreenHeight = this.canvas.height;
+            this.canvas.style.width = `${rect.width}px`;
+            this.canvas.style.height = `${rect.height}px`;
 
-            this.createParticles();
+            if (Math.abs(this.prevScreenWidth - rect.width) > 250 ||
+                Math.abs(this.prevScreenHeight - rect.height) > 250) {
+
+                this.prevScreenWidth = rect.width;
+                this.prevScreenHeight = rect.height;
+                this.createParticles();
+            }
         },
 
         handleMouseLeave() {
             this.isMouseInside = false;
         },
 
-        handleMouseEnter() {
+        handleMouseEnter(e) {
             this.isMouseInside = true;
+            this.handleMouseMove(e);
         },
     }
 };
