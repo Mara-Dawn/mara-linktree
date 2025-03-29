@@ -396,7 +396,6 @@ export default {
                 this.mouseY <= rect.height + this.mouseRadius;
 
             if (isNearCanvas) {
-                e.preventDefault(); // Only prevent default when interacting with canvas
                 this.isMouseInside = true;
             }
         },
