@@ -155,7 +155,14 @@ export default {
 
         calculateParticleCount() {
             const area = this.canvas.width * this.canvas.height;
-            const count = Math.floor(area * this.particleDensity);
+
+            // Base density for standard screen size
+            const referenceArea = 1920 * 1080;
+            const scaleFactor = Math.sqrt(area / referenceArea);
+
+            const adjustedDensity = this.particleDensity * scaleFactor;
+
+            const count = Math.floor(area * adjustedDensity);
 
             return Math.max(this.minParticleCount, Math.min(count, this.maxParticleCount));
         },
