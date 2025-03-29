@@ -117,13 +117,20 @@ export default {
             this.particles = [];
             const particleCount = this.calculateParticleCount();
 
+            const visibleWidth = window.innerWidth;
+            const visibleHeight = window.innerHeight;
+
             for (let i = 0; i < particleCount; i++) {
                 const radius = Math.random() * (this.maxRadius - this.minRadius) + this.minRadius;
                 const mass = Math.PI * radius * radius;
 
+                const padding = radius * 2;
+                const x = padding + Math.random() * (visibleWidth - padding * 2);
+                const y = padding + Math.random() * (visibleHeight - padding * 2);
+
                 this.particles.push({
-                    x: Math.random() * this.canvas.width,
-                    y: Math.random() * this.canvas.height,
+                    x: x,
+                    y: y,
                     radius: radius,
                     mass: mass,
                     color: this.colors[Math.floor(Math.random() * this.colors.length)],
@@ -154,15 +161,12 @@ export default {
         },
 
         calculateParticleCount() {
-            const area = this.canvas.width * this.canvas.height;
+            const visibleWidth = window.innerWidth;
+            const visibleHeight = window.innerHeight;
 
-            // Base density for standard screen size
-            const referenceArea = 1920 * 1080;
-            const scaleFactor = Math.sqrt(area / referenceArea);
+            const visibleArea = visibleWidth * visibleHeight;
 
-            const adjustedDensity = this.particleDensity * scaleFactor;
-
-            const count = Math.floor(area * adjustedDensity);
+            const count = Math.floor(visibleArea * this.particleDensity);
 
             return Math.max(this.minParticleCount, Math.min(count, this.maxParticleCount));
         },
@@ -329,31 +333,21 @@ export default {
                 particle.x += particle.speedX * timeScale * 60;
                 particle.y += particle.speedY * timeScale * 60;
 
-                const viewWidth = this.canvas.width / (window.devicePixelRatio || 1);
-                const viewHeight = this.canvas.height / (window.devicePixelRatio || 1);
-                const buffer = particle.radius * 2;
 
                 // Boundary check
-                if (particle.x < -buffer) {
-                    particle.x = viewWidth + buffer / 2;
-                } else if (particle.x > viewWidth + buffer) {
-                    particle.x = -buffer / 2;
+                const visibleWidth = window.innerWidth;
+                const visibleHeight = window.innerHeight;
+
+                if (particle.x < -particle.radius) {
+                    particle.x = visibleWidth + particle.radius;
+                } else if (particle.x > visibleWidth + particle.radius) {
+                    particle.x = -particle.radius;
                 }
 
-                if (particle.y < -buffer) {
-                    particle.y = viewHeight + buffer / 2;
-                } else if (particle.y > viewHeight + buffer) {
-                    particle.y = -buffer / 2;
-                }
-
-                // Additional Safeguards
-                const maxDistance = Math.max(viewWidth, viewHeight) * 2;
-                if (particle.x < -maxDistance || particle.x > viewWidth + maxDistance ||
-                    particle.y < -maxDistance || particle.y > viewHeight + maxDistance) {
-                    particle.x = Math.random() * viewWidth;
-                    particle.y = Math.random() * viewHeight;
-                    particle.speedX = particle.originalSpeedX;
-                    particle.speedY = particle.originalSpeedY;
+                if (particle.y < -particle.radius) {
+                    particle.y = visibleHeight + particle.radius;
+                } else if (particle.y > visibleHeight + particle.radius) {
+                    particle.y = -particle.radius;
                 }
 
                 if (isNaN(particle.x) || isNaN(particle.y) ||
