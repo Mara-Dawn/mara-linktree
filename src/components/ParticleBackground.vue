@@ -322,20 +322,33 @@ export default {
                 particle.x += particle.speedX * timeScale * 60;
                 particle.y += particle.speedY * timeScale * 60;
 
+                const viewWidth = this.canvas.width / (window.devicePixelRatio || 1);
+                const viewHeight = this.canvas.height / (window.devicePixelRatio || 1);
+                const buffer = particle.radius * 2;
+
                 // Boundary check
-                if (particle.x < -particle.radius) {
-                    particle.x = this.canvas.width + particle.radius;
-                } else if (particle.x > this.canvas.width + particle.radius) {
-                    particle.x = -particle.radius;
+                if (particle.x < -buffer) {
+                    particle.x = viewWidth + buffer / 2;
+                } else if (particle.x > viewWidth + buffer) {
+                    particle.x = -buffer / 2;
                 }
 
-                if (particle.y < -particle.radius) {
-                    particle.y = this.canvas.height + particle.radius;
-                } else if (particle.y > this.canvas.height + particle.radius) {
-                    particle.y = -particle.radius;
+                if (particle.y < -buffer) {
+                    particle.y = viewHeight + buffer / 2;
+                } else if (particle.y > viewHeight + buffer) {
+                    particle.y = -buffer / 2;
                 }
 
-                // Additional Safeguard
+                // Additional Safeguards
+                const maxDistance = Math.max(viewWidth, viewHeight) * 2;
+                if (particle.x < -maxDistance || particle.x > viewWidth + maxDistance ||
+                    particle.y < -maxDistance || particle.y > viewHeight + maxDistance) {
+                    particle.x = Math.random() * viewWidth;
+                    particle.y = Math.random() * viewHeight;
+                    particle.speedX = particle.originalSpeedX;
+                    particle.speedY = particle.originalSpeedY;
+                }
+
                 if (isNaN(particle.x) || isNaN(particle.y) ||
                     !isFinite(particle.x) || !isFinite(particle.y) ||
                     Math.abs(particle.speedX) > this.maxSpeedBase * 10 ||
