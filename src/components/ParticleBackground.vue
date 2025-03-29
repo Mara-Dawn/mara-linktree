@@ -68,16 +68,26 @@ export default {
         window.addEventListener('mousemove', this.handleMouseMove);
         window.addEventListener('mouseout', this.handleMouseLeave);
         window.addEventListener('mouseover', this.handleMouseEnter);
+
+        window.addEventListener('touchstart', this.handleTouch, { passive: false });
+        window.addEventListener('touchmove', this.handleTouch, { passive: false });
+        window.addEventListener('touchend', this.handleTouchEnd);
+
         window.addEventListener('resize', this.handleResize);
     },
 
     beforeUnmount() {
         cancelAnimationFrame(this.animationFrame);
 
-        window.removeEventListener('resize', this.handleResize);
         window.removeEventListener('mousemove', this.handleMouseMove);
         window.removeEventListener('mouseout', this.handleMouseLeave);
         window.removeEventListener('mouseover', this.handleMouseEnter);
+
+        window.removeEventListener('touchstart', this.handleTouch);
+        window.removeEventListener('touchmove', this.handleTouch);
+        window.removeEventListener('touchend', this.handleTouchEnd);
+
+        window.removeEventListener('resize', this.handleResize);
     },
 
     methods: {
@@ -338,19 +348,6 @@ export default {
             }
         },
 
-        handleMouseMove(e) {
-            const rect = this.canvas.getBoundingClientRect();
-
-            this.mouseX = e.clientX - rect.left;
-            this.mouseY = e.clientY - rect.top;
-
-            this.isMouseInside =
-                this.mouseX >= 0 &&
-                this.mouseX <= rect.width &&
-                this.mouseY >= 0 &&
-                this.mouseY <= rect.height;
-        },
-
         handleResize() {
             const dpr = window.devicePixelRatio || 1;
             const rect = this.$refs.particleContainer.getBoundingClientRect();
@@ -369,6 +366,43 @@ export default {
                 this.prevScreenHeight = rect.height;
                 this.createParticles();
             }
+        },
+
+        handleMouseMove(e) {
+            const rect = this.canvas.getBoundingClientRect();
+
+            this.mouseX = e.clientX - rect.left;
+            this.mouseY = e.clientY - rect.top;
+
+            this.isMouseInside =
+                this.mouseX >= 0 &&
+                this.mouseX <= rect.width &&
+                this.mouseY >= 0 &&
+                this.mouseY <= rect.height;
+        },
+
+        handleTouch(e) {
+            const rect = this.canvas.getBoundingClientRect();
+            const touch = e.touches[0]; // Get the first touch point
+
+            this.mouseX = touch.clientX - rect.left;
+            this.mouseY = touch.clientY - rect.top;
+
+            // Check if touch is within canvas or close to it (within mouseRadius)
+            const isNearCanvas =
+                this.mouseX >= -this.mouseRadius &&
+                this.mouseX <= rect.width + this.mouseRadius &&
+                this.mouseY >= -this.mouseRadius &&
+                this.mouseY <= rect.height + this.mouseRadius;
+
+            if (isNearCanvas) {
+                e.preventDefault(); // Only prevent default when interacting with canvas
+                this.isMouseInside = true;
+            }
+        },
+
+        handleTouchEnd() {
+            this.isMouseInside = false;
         },
 
         handleMouseLeave() {
