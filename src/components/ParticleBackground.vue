@@ -96,15 +96,19 @@ export default {
             this.ctx = this.canvas.getContext('2d');
 
             const dpr = window.devicePixelRatio || 1;
-            const rect = this.$refs.particleContainer.getBoundingClientRect();
 
-            this.canvas.width = rect.width * dpr;
-            this.canvas.height = rect.height * dpr;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            this.$refs.particleContainer.style.width = `${viewportWidth}px`;
+            this.$refs.particleContainer.style.height = `${viewportHeight}px`;
+
+            this.canvas.style.width = `${viewportWidth}px`;
+            this.canvas.style.height = `${viewportHeight}px`;
+
+            this.canvas.width = viewportWidth * dpr;
+            this.canvas.height = viewportHeight * dpr;
 
             this.ctx.scale(dpr, dpr);
-
-            this.canvas.style.width = `${rect.width}px`;
-            this.canvas.style.height = `${rect.height}px`;
 
             this.cellSize = this.lineDistance * 1.1;
         },
@@ -350,20 +354,24 @@ export default {
 
         handleResize() {
             const dpr = window.devicePixelRatio || 1;
-            const rect = this.$refs.particleContainer.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
 
-            this.canvas.width = rect.width * dpr;
-            this.canvas.height = rect.height * dpr;
+            this.$refs.particleContainer.style.width = `${viewportWidth}px`;
+            this.$refs.particleContainer.style.height = `${viewportHeight}px`;
+
+            this.canvas.style.width = `${viewportWidth}px`;
+            this.canvas.style.height = `${viewportHeight}px`;
+
+            this.canvas.width = viewportWidth * dpr;
+            this.canvas.height = viewportHeight * dpr;
             this.ctx.scale(dpr, dpr);
 
-            this.canvas.style.width = `${rect.width}px`;
-            this.canvas.style.height = `${rect.height}px`;
+            if (Math.abs(this.prevScreenWidth - viewportWidth) > 250 ||
+                Math.abs(this.prevScreenHeight - viewportHeight) > 250) {
 
-            if (Math.abs(this.prevScreenWidth - rect.width) > 250 ||
-                Math.abs(this.prevScreenHeight - rect.height) > 250) {
-
-                this.prevScreenWidth = rect.width;
-                this.prevScreenHeight = rect.height;
+                this.prevScreenWidth = viewportWidth;
+                this.prevScreenHeight = viewportHeight;
                 this.createParticles();
             }
         },
@@ -419,8 +427,8 @@ export default {
 <style scoped>
 .particle-container {
     position: fixed;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     overflow: hidden;
     background-color: #1e1e2e;
     z-index: 0;
