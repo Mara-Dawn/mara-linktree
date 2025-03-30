@@ -21,6 +21,7 @@ export default {
             specialColors: ['#f38ba8', '#cba6f7', '#f5c2e7', '#f9e2af', '#a6e3a1', '#94e2d5', '#74c7ec', '#313244'],
             currentSpecialColor: 0,
             currentSpecialTransitionFactor: 0,
+            specialColorChanged: false,
             colorFactor: 0.2,
             minRadius: 1,
             maxRadius: 5,
@@ -292,7 +293,13 @@ export default {
                 this.ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
                 this.ctx.fillStyle = particle.color;
                 this.ctx.fill();
+
+                if (this.specialColorChanged) {
+                    particle.originalColor = particle.color;
+                    particle.colorTransitionFactor = 0;
+                }
             }
+            this.specialColorChanged = false;
 
             for (let i = 0; i < this.particles.length; i++) {
 
@@ -588,6 +595,7 @@ export default {
 
         handleMouseDown() {
             this.isMouseDown = true;
+            this.specialColorChanged = true;
         },
 
         handleMouseUp() {
