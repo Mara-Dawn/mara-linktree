@@ -23,6 +23,7 @@ export default {
             currentSpecialTransitionFactor: 0,
             specialColorChanged: false,
             colorFactor: 0.2,
+            specialColorFactor: 0.5,
             minRadius: 1,
             maxRadius: 5,
 
@@ -514,7 +515,7 @@ export default {
                 const nextColorIndex = (this.currentSpecialColor + 1) % this.specialColors.length;
                 const targetColor = this.specialColors[nextColorIndex];
 
-                this.currentSpecialTransitionFactor += timeScale * this.colorFactor;
+                this.currentSpecialTransitionFactor += timeScale * this.specialColorFactor;
                 this.currentSpecialTransitionFactor = Math.min(1, this.currentSpecialTransitionFactor);
 
                 const newColor = this.interpolateColors(
