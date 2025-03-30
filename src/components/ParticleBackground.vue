@@ -18,6 +18,10 @@ export default {
             particles: [],
             particleDensity: 0.00007,
             colors: ['#585b70', '#cba6f7', '#45475a', '#6c7086', '#7f849c'],
+            specialColors: ['#f38ba8', '#cba6f7', '#f5c2e7', '#f9e2af', '#a6e3a1', '#94e2d5', '#74c7ec', '#313244'],
+            currentSpecialColor: 0,
+            currentSpecialTransitionFactor: 0,
+            colorFactor: 0.2,
             minRadius: 1,
             maxRadius: 5,
 
@@ -42,6 +46,7 @@ export default {
             mouseRadius: 200,
             mouseForceModifier: 300,
             isMouseInside: false,
+            isMouseDown: false,
 
             grid: {},
 
@@ -72,6 +77,8 @@ export default {
         window.addEventListener('mousemove', this.handleMouseMove);
         window.addEventListener('mouseout', this.handleMouseLeave);
         window.addEventListener('mouseover', this.handleMouseEnter);
+        window.addEventListener('mousedown', this.handleMouseDown);
+        window.addEventListener('mouseup', this.handleMouseUp);
 
         window.addEventListener('touchstart', this.handleTouch, { passive: false });
         window.addEventListener('touchmove', this.handleTouch, { passive: false });
@@ -86,6 +93,8 @@ export default {
         window.removeEventListener('mousemove', this.handleMouseMove);
         window.removeEventListener('mouseout', this.handleMouseLeave);
         window.removeEventListener('mouseover', this.handleMouseEnter);
+        window.removeEventListener('mousedown', this.handleMouseDown);
+        window.removeEventListener('mouseup', this.handleMouseUp);
 
         window.removeEventListener('touchstart', this.handleTouch);
         window.removeEventListener('touchmove', this.handleTouch);
@@ -134,7 +143,7 @@ export default {
                 let color = this.colors[Math.floor(Math.random() * this.colors.length)];
 
                 if (i === 0) {
-                    color = '#f38ba8';
+                    color = this.specialColors[this.currentSpecialColor];
                     radius = this.maxRadius + 5;
                 }
 
@@ -239,6 +248,34 @@ export default {
             }
 
             return neighbors;
+        },
+
+        hexToRgb(hex) {
+            hex = hex.replace(/^#/, '');
+
+            const bigint = parseInt(hex, 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+
+            return { r, g, b };
+        },
+
+        rgbToHex(r, g, b) {
+            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        },
+
+        interpolateColors(color1, color2, factor) {
+            factor = Math.max(0, Math.min(1, factor));
+
+            const rgb1 = this.hexToRgb(color1);
+            const rgb2 = this.hexToRgb(color2);
+
+            const r = Math.round(rgb1.r + factor * (rgb2.r - rgb1.r));
+            const g = Math.round(rgb1.g + factor * (rgb2.g - rgb1.g));
+            const b = Math.round(rgb1.b + factor * (rgb2.b - rgb1.b));
+
+            return this.rgbToHex(r, g, b);
         },
 
         updateParticles(deltaTime) {
@@ -364,8 +401,34 @@ export default {
                             this.ctx.globalAlpha = 1;
 
                             drawnLineCount++;
-                        }
 
+                            // Coloring other particles from special particle
+                            if (i === 0) {
+                                const targetColor = particle.color;
+
+                                if (!otherParticle.originalColor) {
+                                    otherParticle.originalColor = otherParticle.color;
+                                }
+
+                                if (!otherParticle.colorTransitionFactor) {
+                                    otherParticle.colorTransitionFactor = 0;
+                                }
+
+                                const distanceFactor = 1 - (distance / this.lineDistance);
+                                const speedMultiplier = 1 + (distanceFactor * 2);
+
+                                otherParticle.colorTransitionFactor += timeScale * this.colorFactor * speedMultiplier;
+                                otherParticle.colorTransitionFactor = Math.min(1, otherParticle.colorTransitionFactor);
+
+                                const newColor = this.interpolateColors(
+                                    otherParticle.originalColor,
+                                    targetColor,
+                                    otherParticle.colorTransitionFactor
+                                );
+
+                                this.particles[neighborIndex].color = newColor;
+                            }
+                        }
                     }
                 }
 
@@ -427,6 +490,29 @@ export default {
                     particle.impulseY = 0;
                 }
 
+            }
+
+            if (this.isMouseDown) {
+
+                const originalColor = this.specialColors[this.currentSpecialColor];
+                const nextColorIndex = (this.currentSpecialColor + 1) % this.specialColors.length;
+                const targetColor = this.specialColors[nextColorIndex];
+
+                this.currentSpecialTransitionFactor += timeScale * this.colorFactor;
+                this.currentSpecialTransitionFactor = Math.min(1, this.currentSpecialTransitionFactor);
+
+                const newColor = this.interpolateColors(
+                    originalColor,
+                    targetColor,
+                    this.currentSpecialTransitionFactor
+                );
+
+                if (this.currentSpecialTransitionFactor === 1) {
+                    this.currentSpecialColor = nextColorIndex;
+                    this.currentSpecialTransitionFactor = 0;
+                }
+
+                this.particles[0].color = newColor;
             }
         },
 
@@ -492,11 +578,20 @@ export default {
 
         handleMouseLeave() {
             this.isMouseInside = false;
+            this.isMouseDown = false;
         },
 
         handleMouseEnter(e) {
             this.isMouseInside = true;
             this.handleMouseMove(e);
+        },
+
+        handleMouseDown() {
+            this.isMouseDown = true;
+        },
+
+        handleMouseUp() {
+            this.isMouseDown = false;
         },
     }
 };
