@@ -25,6 +25,10 @@ export default {
             lineWidth: 1,
             lineOpacity: 0.4,
 
+            maxLinesPerFrame: 3000,
+            lineSkipDensity: 1.5,
+            connectionCheckFrequency: 1,
+
             animationFrame: null,
             lastFrameTime: 0,
             frameCount: 0,
@@ -121,19 +125,27 @@ export default {
             const visibleHeight = window.innerHeight;
 
             for (let i = 0; i < particleCount; i++) {
-                const radius = Math.random() * (this.maxRadius - this.minRadius) + this.minRadius;
-                const mass = Math.PI * radius * radius;
+                let radius = Math.random() * (this.maxRadius - this.minRadius) + this.minRadius;
 
                 const padding = radius * 2;
                 const x = padding + Math.random() * (visibleWidth - padding * 2);
                 const y = padding + Math.random() * (visibleHeight - padding * 2);
+
+                let color = this.colors[Math.floor(Math.random() * this.colors.length)];
+
+                if (i === 0) {
+                    color = '#f38ba8';
+                    radius = this.maxRadius + 5;
+                }
+
+                const mass = Math.PI * radius * radius;
 
                 this.particles.push({
                     x: x,
                     y: y,
                     radius: radius,
                     mass: mass,
-                    color: this.colors[Math.floor(Math.random() * this.colors.length)],
+                    color: color,
                     speedX: (Math.random() * 1 - 0.5) * this.speedModifier * (this.massSpeedFactor / mass),
                     speedY: (Math.random() * 1 - 0.5) * this.speedModifier * (this.massSpeedFactor / mass),
                     originalSpeedX: (Math.random() * 1 - 0.5) * this.speedModifier * (this.massSpeedFactor / mass),
@@ -158,6 +170,13 @@ export default {
             this.updateParticles(deltaTime);
 
             this.animationFrame = requestAnimationFrame(this.animate);
+
+            this.frameCount++;
+            if (this.frameCount % 10 === 0) {
+                for (let i = 0; i < this.particles.length; i++) {
+                    delete this.particles[i].localDensity;
+                }
+            }
         },
 
         calculateParticleCount() {
@@ -169,6 +188,23 @@ export default {
             const count = Math.floor(visibleArea * this.particleDensity);
 
             return Math.max(this.minParticleCount, Math.min(count, this.maxParticleCount));
+        },
+
+        calculateLocalDensity(cellX, cellY) {
+            let count = 0;
+
+            for (let x = cellX - 1; x <= cellX + 1; x++) {
+                for (let y = cellY - 1; y <= cellY + 1; y++) {
+                    const cellKey = `${x},${y}`;
+                    if (this.grid[cellKey]) {
+                        count += this.grid[cellKey].length;
+                    }
+                }
+            }
+
+            const avgDensity = count / 9; // 3x3 grid of cells
+
+            return avgDensity / this.particles.length * 100;
         },
 
         updateGrid() {
@@ -211,6 +247,7 @@ export default {
             const repulsionRadiusSq = this.repulsionRadius * this.repulsionRadius;
             const lineDistanceSq = this.lineDistance * this.lineDistance;
             const mouseRadiusSq = this.mouseRadius * this.mouseRadius;
+            let drawnLineCount = 0;
 
             for (let i = 0; i < this.particles.length; i++) {
                 const particle = this.particles[i];
@@ -261,8 +298,18 @@ export default {
                     if (distanceSq < Math.max(repulsionRadiusSq, lineDistanceSq) && distanceSq > 0) {
                         const distance = Math.sqrt(distanceSq);
 
+                        if (particle.localDensity === undefined) {
+                            particle.localDensity = this.calculateLocalDensity(particle.cellX, particle.cellY);
+                        }
+
                         // Repulsion
                         if (distanceSq < repulsionRadiusSq) {
+
+                            if (particle.localDensity > this.lineSkipDensity * 2 &&
+                                distanceSq > repulsionRadiusSq * 0.5) {
+                                continue;
+                            }
+
                             const forceFactor = Math.pow(1 - distance / this.repulsionRadius, 2);
 
                             const emitterFactor = this.massInfluence > 0
@@ -286,6 +333,20 @@ export default {
 
                         // Line connections
                         if (neighborIndex > i && distanceSq < lineDistanceSq) {
+
+                            if (drawnLineCount > this.maxLinesPerFrame) {
+                                continue;
+                            }
+
+                            if (particle.localDensity > this.lineSkipDensity) {
+                                const skipFactor = Math.min(0.8, (particle.localDensity - this.lineSkipDensity) / 6);
+                                const hashValue = (i * 31 + neighborIndex) % 100 / 100;
+
+                                if (hashValue < skipFactor) {
+                                    continue;
+                                }
+                            }
+
                             const gradient = this.ctx.createLinearGradient(
                                 particle.x, particle.y,
                                 otherParticle.x, otherParticle.y
@@ -301,7 +362,10 @@ export default {
                             this.ctx.lineTo(otherParticle.x, otherParticle.y);
                             this.ctx.stroke();
                             this.ctx.globalAlpha = 1;
+
+                            drawnLineCount++;
                         }
+
                     }
                 }
 
