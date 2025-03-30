@@ -349,37 +349,44 @@ export default {
                         // Repulsion
                         if (distanceSq < repulsionRadiusSq) {
 
+                            let skipCalc = false;
+
                             if (particle.localDensity > this.lineSkipDensity * 2 &&
                                 distanceSq > repulsionRadiusSq * 0.5) {
-                                continue;
+                                skipCalc = true;
                             }
 
-                            const forceFactor = Math.pow(1 - distance / this.repulsionRadius, 2);
+                            if (!skipCalc) {
+                                const forceFactor = Math.pow(1 - distance / this.repulsionRadius, 2);
 
-                            const emitterFactor = this.massInfluence > 0
-                                ? Math.pow(otherParticle.mass, this.massInfluence) * this.massEmitterFactor
-                                : 1.0;
-                            const receiverFactor = this.massInfluence > 0
-                                ? inverseMass * this.massReceiverFactor
-                                : 1.0;
+                                const emitterFactor = this.massInfluence > 0
+                                    ? Math.pow(otherParticle.mass, this.massInfluence) * this.massEmitterFactor
+                                    : 1.0;
+                                const receiverFactor = this.massInfluence > 0
+                                    ? inverseMass * this.massReceiverFactor
+                                    : 1.0;
 
-                            const impulseStrength = Math.min(
-                                this.repulsionStrength * forceFactor * timeScale *
-                                this.repulsionFactor * emitterFactor * receiverFactor,
-                                10
-                            );
+                                const impulseStrength = Math.min(
+                                    this.repulsionStrength * forceFactor * timeScale *
+                                    this.repulsionFactor * emitterFactor * receiverFactor,
+                                    10
+                                );
 
-                            if (distance > 0) {
-                                particle.impulseX += (dx / distance) * impulseStrength;
-                                particle.impulseY += (dy / distance) * impulseStrength;
+                                if (distance > 0) {
+                                    particle.impulseX += (dx / distance) * impulseStrength;
+                                    particle.impulseY += (dy / distance) * impulseStrength;
+                                }
                             }
+
                         }
 
                         // Line connections
                         if (neighborIndex > i && distanceSq < lineDistanceSq) {
 
+                            let skipLine = false;
+
                             if (drawnLineCount > this.maxLinesPerFrame) {
-                                continue;
+                                skipLine = true;
                             }
 
                             if (particle.localDensity > this.lineSkipDensity) {
@@ -387,27 +394,29 @@ export default {
                                 const hashValue = (i * 31 + neighborIndex) % 100 / 100;
 
                                 if (hashValue < skipFactor) {
-                                    continue;
+                                    skipLine = true;
                                 }
                             }
 
-                            const gradient = this.ctx.createLinearGradient(
-                                particle.x, particle.y,
-                                otherParticle.x, otherParticle.y
-                            );
-                            gradient.addColorStop(0, particle.color);
-                            gradient.addColorStop(1, otherParticle.color);
+                            if (!skipLine) {
+                                const gradient = this.ctx.createLinearGradient(
+                                    particle.x, particle.y,
+                                    otherParticle.x, otherParticle.y
+                                );
+                                gradient.addColorStop(0, particle.color);
+                                gradient.addColorStop(1, otherParticle.color);
 
-                            this.ctx.beginPath();
-                            this.ctx.strokeStyle = gradient;
-                            this.ctx.globalAlpha = this.lineOpacity * (1 - distance / this.lineDistance);
-                            this.ctx.lineWidth = this.lineWidth;
-                            this.ctx.moveTo(particle.x, particle.y);
-                            this.ctx.lineTo(otherParticle.x, otherParticle.y);
-                            this.ctx.stroke();
-                            this.ctx.globalAlpha = 1;
+                                this.ctx.beginPath();
+                                this.ctx.strokeStyle = gradient;
+                                this.ctx.globalAlpha = this.lineOpacity * (1 - distance / this.lineDistance);
+                                this.ctx.lineWidth = this.lineWidth;
+                                this.ctx.moveTo(particle.x, particle.y);
+                                this.ctx.lineTo(otherParticle.x, otherParticle.y);
+                                this.ctx.stroke();
+                                this.ctx.globalAlpha = 1;
 
-                            drawnLineCount++;
+                                drawnLineCount++;
+                            }
 
                             // Coloring other particles from special particle
                             if (i === 0) {
