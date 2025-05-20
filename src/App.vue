@@ -29,8 +29,9 @@ export default {
             discordIcon: 'nf nf-fa-discord',
             links: [
                 { url: 'https://github.com/Mara-Dawn', icon: 'nf nf-dev-github', account: '@Mara-Dawn' },
-                { url: 'https://www.youtube.com/@MaraDawn', icon: 'nf nf-fa-youtube', account: '@MaraDawn' },
                 { url: 'https://github.com/Mara-Dawn/dotfiles', icon: 'nf nf-md-arch', account: '.dotfiles' },
+                { url: 'https://www.youtube.com/@MaraDawn', icon: 'nf nf-fa-youtube', account: '@MaraDawn' },
+                { url: 'https://bsky.app/profile/sleepymara.bsky.social', icon: 'nf nf-fae-butterfly', account: '@sleepymara' },
             ],
         }
     },
